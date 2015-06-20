@@ -7,7 +7,7 @@ var https = require('https'),
         POST: "POST"
     },
     ChangeTipException                    = require('./changetip-exception'),
-    CHANGETIP_DEFAULT_VERSION             = "1",
+    CHANGETIP_DEFAULT_VERSION             = "2",
     CHANGETIP_DEFAULT_HOST                = "api.changetip.com",
     CHANGETIP_DEFAULT_AUTHENTICATION_TYPE = "access_token",
     instance;
