@@ -186,6 +186,29 @@ ChangeTip.prototype = {
 
 
     /**
+     * Get User.
+     * @param {number} userId
+     * @param {boolean} full
+     * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
+     */
+    user: function (userId, full) {
+        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
+        if (!userId) throw new ChangeTipException(401)
+
+        var deferred = Q.defer(),
+            params;
+
+        params = {
+            full: full || false
+        };
+
+        this._send_request({}, 'users/' + userId, params, Methods.GET, deferred);
+        return deferred.promise;
+    },
+
+
+    /**
      * List of Users.
      * @param {number} pageNumber
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
