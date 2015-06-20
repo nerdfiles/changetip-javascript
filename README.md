@@ -1,5 +1,7 @@
 # ChangeTip API for NodeJS ![CircleCI Build Status](https://circleci.com/gh/changecoin/changetip-javascript.svg?style=shield&circle-token=:circle-token)
-Enables easy communication with the ChangeTip API via NodeJS. Allows for sending and retrieving tip information
+Enables easy communication with the ChangeTip API via NodeJS. Allows for sending and retrieving tip information.
+
+Now supports most of v2 API.
 
 ## Installation
     
