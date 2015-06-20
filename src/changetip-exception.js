@@ -15,6 +15,8 @@ var ChangeTipExceptions = {
     500: "Text Amount or Message were not provided",
     /** API version not supported. */
     400: "API version not supported",
+    /** User ID required. **/
+    401: "User ID require"
 };
 
 /**
