@@ -1,6 +1,11 @@
 "use strict";
+
+try
+    Q = require('q')
+catch e
+    Q = require('Q')
+
 var https = require('https'),
-    Q = require('q'),
     querystring = require('querystring'),
     Methods = {
         GET: "GET",
