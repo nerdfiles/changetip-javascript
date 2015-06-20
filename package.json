@@ -3,12 +3,14 @@
   "version": "0.1.2",
   "description": "ChangeTip API for NodeJS",
   "homepage": "https://www.changetip.com",
-  "author": "Ross Gerbasi",
+  "author": {
+    "name": "Ross Gerbasi"
+  },
   "license": "BSD-2-Clause",
   "contributors": [
     {
       "name": "Ross Gerbasi",
-      "web": "https://rossgerbasi.com"
+      "url": "https://rossgerbasi.com"
     }
   ],
   "engines": {
@@ -35,7 +37,9 @@
     "test": "mocha --colors -R spec test/specs/*.js",
     "test-dbg": "node-debug _mocha -R spec test/specs/*.js"
   },
-  "bugs": "https://github.com/changecoin/changetip-javascript/issues",
+  "bugs": {
+    "url": "https://github.com/changecoin/changetip-javascript/issues"
+  },
   "licenses": [
     {
       "type": "BSD",
@@ -47,5 +51,36 @@
       "type": "git",
       "url": "git://github.com/changecoin/changetip-javascript.git"
     }
-  ]
+  ],
+  "gitHead": "093a7abedbdb69e7ffc08236cec001c1630cf5e1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/changecoin/changetip-javascript.git"
+  },
+  "_id": "changetip@0.1.2",
+  "_shasum": "b6370afd809a6f195f38191f3644642f263b8e4c",
+  "_from": "changetip@>=0.1.2 <0.2.0",
+  "_npmVersion": "2.2.0",
+  "_nodeVersion": "0.12.0",
+  "_npmUser": {
+    "name": "rawss",
+    "email": "rgerbasi@gmail.com"
+  },
+  "maintainers": [
+    {
+      "name": "gorillamania",
+      "email": "nick@sullivanflock.com"
+    },
+    {
+      "name": "rawss",
+      "email": "rgerbasi@gmail.com"
+    }
+  ],
+  "dist": {
+    "shasum": "b6370afd809a6f195f38191f3644642f263b8e4c",
+    "tarball": "http://registry.npmjs.org/changetip/-/changetip-0.1.2.tgz"
+  },
+  "directories": {},
+  "_resolved": "https://registry.npmjs.org/changetip/-/changetip-0.1.2.tgz",
+  "readme": "ERROR: No README data found!"
 }

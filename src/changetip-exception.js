@@ -10,7 +10,11 @@ var ChangeTipExceptions = {
     /** API Key was not set. This must be set during construction or by running init */
     300: "No API_KEY set. Call init prior to any remote API calls",
     /** Channel was not defined for remote call */
-    301: "Channel is undefined, must be set prior to any remote API calls"
+    301: "Channel is undefined, must be set prior to any remote API calls",
+    /** Text Amount or Message was not defined. */
+    500: "Text Amount or Message were not provided",
+    /** API version not supported. */
+    400: "API version not supported",
 };
 
 /**
