@@ -15,7 +15,7 @@ var https = require('https'),
 /**
  * @typedef ChangeTipConfig
  * @type {object}
- * @property {string} api_key_or_token API Key for ChangeTip
+ * @property {string} api_key_or_access_token API Key for ChangeTip
  * @property {string} host Host URL for all remote API requests (defaults to CHANGETIP_DEFAULT_HOST)
  * @property {number} api_version Base URL for all remote API requests (defaults to CHANGETIP_DEFAULT_VERSION)
  * @property {string} authentication_type Choose to pass either an API Key or an Access Token (defaults to CHANGETIP_DEFAULT_AUTHENTICATION_TYPE)
@@ -37,14 +37,14 @@ ChangeTip.prototype = {
     /**
      * API Key from ChangeTip. Request one from the {@link htps://www.changetip.com/api|ChangeTip API} website.'
      * @public
-     * @property {string} api_key_or_token
+     * @property {string} api_key_or_access_token
      */
-    set api_key_or_token(value) {
-        this._api_key_or_token = value;
+    set api_key_or_access_token(value) {
+        this._api_key_or_access_token = value;
     },
 
-    get api_key_or_token() {
-        return this._api_key_or_token;
+    get api_key_or_access_token() {
+        return this._api_key_or_access_token;
     },
 
     /**
@@ -103,7 +103,7 @@ ChangeTip.prototype = {
      */
     init: function (config) {
         config                   = config || {};
-        this.api_key_or_token    = config.api_key_or_token || undefined;
+        this.api_key_or_access_token    = config.api_key_or_access_token || undefined;
         this.authentication_type = config.authentication_type || undefined;
         this.host                = config.host || undefined;
         this.api_version         = config.api_version || undefined;
@@ -123,7 +123,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     send_tip: function (context_uid, sender, receiver, channel, message, meta) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (!channel) throw new ChangeTipException(301);
 
         var deferred = Q.defer(),
@@ -149,7 +149,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     monikers: function (pageNumber) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
         var deferred = Q.defer(),
@@ -170,7 +170,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     currencies: function (pageNumber) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
         var deferred = Q.defer(),
@@ -192,7 +192,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     user: function (userId, full) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
         if (!userId) throw new ChangeTipException(401)
 
@@ -214,7 +214,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     users: function (pageNumber) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
         var deferred = Q.defer(),
@@ -235,7 +235,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     transactions: function (pageNumber) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
         var deferred = Q.defer(),
@@ -258,7 +258,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     tip_url: function (text_amount, moniker, message) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (!text_amount) throw new ChangeTipException(402);
         if (!message) throw new ChangeTipException(402);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
@@ -281,7 +281,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     get_wallet_withdrawals: function() {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
         var deferred = Q.defer();
@@ -298,7 +298,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     post_wallet_withdrawals: function(amount, address) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
         if (!amount) throw new ChangeTipException(403);
         if (!address) throw new ChangeTipException(403);
@@ -321,7 +321,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     get_wallet_balance: function () {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
         var deferred = Q.defer();
@@ -337,7 +337,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     get_wallet_address: function (username) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
         var deferred = Q.defer(),
@@ -359,7 +359,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     get_tip: function (tips, channel) {
-        if (!this.api_key_or_token) throw new ChangeTipException(300);
+        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
 
         var deferred = Q.defer(),
             params;
@@ -395,7 +395,7 @@ ChangeTip.prototype = {
         options = {
             host    : this.host,
             port    : 443,
-            path    : '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_token + (query_params ? ('&' + query_params) : ''),
+            path    : '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token + (query_params ? ('&' + query_params) : ''),
             method  : method,
             headers : {
                 'Content-Type'   : 'application/json',
