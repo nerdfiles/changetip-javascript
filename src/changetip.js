@@ -259,7 +259,8 @@ ChangeTip.prototype = {
      */
     tip_url: function (text_amount, moniker, message) {
         if (!this.api_key_or_token) throw new ChangeTipException(300);
-        if (!text_amount) throw new ChangeTipException(500);
+        if (!text_amount) throw new ChangeTipException(402);
+        if (!message) throw new ChangeTipException(402);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
         var deferred = Q.defer(),
@@ -299,6 +300,8 @@ ChangeTip.prototype = {
     post_wallet_withdrawals: function(amount, address) {
         if (!this.api_key_or_token) throw new ChangeTipException(300);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
+        if (!amount) throw new ChangeTipException(403);
+        if (!address) throw new ChangeTipException(403);
 
         var deferred = Q.defer(),
             data;
