@@ -1,9 +1,10 @@
 "use strict";
 
-try
-    Q = require('q')
-catch e
-    Q = require('Q')
+try {
+    var Q = require('q');
+} catch (e) {
+    var Q = require('Q');
+}
 
 var https = require('https'),
     querystring = require('querystring'),
@@ -129,7 +130,7 @@ ChangeTip.prototype = {
     send_tip: function (context_uid, context_url, sender, receiver, channel, message) {
         if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (!channel) throw new ChangeTipException(301);
-        if (!receiver or !context_uid or !context_url or !message) throw new ChangeTipException(500);
+        if (!receiver || !context_uid || !context_url || !message) throw new ChangeTipException(500);
 
         var deferred = Q.defer(),
             data;
