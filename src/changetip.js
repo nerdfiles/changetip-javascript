@@ -5,6 +5,7 @@ try {
 } catch (e) {
     var Q = require('Q');
 }
+var request = require('request');
 
 var https = require('https'),
     querystring = require('querystring'),
@@ -144,7 +145,7 @@ ChangeTip.prototype = {
             channel     : channel
         };
 
-        this._send_request(data, 'tips', null, Methods.POST, deferred);
+        this._send_request(data, 'tip', null, Methods.POST, deferred);
         return deferred.promise;
     },
 
@@ -263,9 +264,10 @@ ChangeTip.prototype = {
      * @param {string} message
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
-    tip_url: function (text_amount, moniker, message) {
+    tip_url: function (amount, moniker, message) {
         if (!this.api_key_or_access_token) throw new ChangeTipException(300);
-        if (!text_amount) throw new ChangeTipException(402);
+        if (!amount) throw new ChangeTipException(402);
+        if (!moniker) throw new ChangeTipException(404);
         if (!message) throw new ChangeTipException(402);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
@@ -273,9 +275,10 @@ ChangeTip.prototype = {
             data;
 
         data = {
-            text_amount : text_amount,
-            message     : message
+            amount  : amount + ' ' + moniker,
+            message : message
         };
+        console.dir(data);
 
         this._send_request(data, 'tip-url', null, Methods.POST, deferred);
         return deferred.promise;
@@ -401,33 +404,52 @@ ChangeTip.prototype = {
         options = {
             host    : this.host,
             port    : 443,
+            body    : data,
             path    : '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token + (query_params ? ('&' + query_params) : ''),
             method  : method,
             headers : {
-                'Content-Type'   : 'application/json',
-                'Content-Length' : dataString.length
+                //'Content-Type'   : 'application/json',
+                //'Content-Type'   : 'application/x-www-form-urlencoded',
+                'Content-Type'     : 'multipart/form-data',
+                'Content-Length'   : dataString.length
                 //'Bearer'         : this.api_key_or_access_token
             }
         };
 
         if (!this.dev_mode) {
-            req = https.request(options, function (res) {
-                res.setEncoding('utf-8');
 
-                var response = '', result;
-
-                res.on('data', function (response_data) {
-                    response += response_data;
-                });
-
-                res.on('end', function () {
-                    result = JSON.parse(response);
-                    deferred.resolve(result);
-                });
+            request.post({
+                url: 'https://' + this.host + '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token,
+                formData: data
+            }, function optionalCallback(err, httpResponse, body) {
+                if (err) {
+                    deferred.resolve(err);
+                    return
+                }
+                deferred.resolve(body);
             });
 
-            req.write(dataString);
-            req.end();
+/*
+ *            req = https.request(options, function (res) {
+ *                res.setEncoding('utf-8');
+ *
+ *                var response = '', result;
+ *
+ *                res.on('data', function (response_data) {
+ *                    response += response_data;
+ *                });
+ *
+ *                res.on('end', function () {
+ *                    //result = JSON.parse(response);
+ *                    result = response;
+ *                    deferred.resolve(result);
+ *                });
+ *            });
+ *
+ *            req.write(dataString);
+ *            req.end();
+ */
+
         } else {
             deferred.resolve({
                 status : "dev_mode",

@@ -19,6 +19,8 @@ var ChangeTipExceptions = {
     402: "Text Amount or Message were not provided",
     /** Text Amount or Address was not defined. */
     403: "Text Amount or Address were not provided",
+    /** Moniker require. */
+    404: "Moniker require",
     /** Generic error. */
     500: 'Something is amiss!'
 };
