@@ -16,9 +16,11 @@ var ChangeTipExceptions = {
     /** User ID required. **/
     401: "User ID require",
     /** Text Amount or Message was not defined. */
-    402: "Text Amount or Message were not provided"
+    402: "Text Amount or Message were not provided",
     /** Text Amount or Address was not defined. */
-    403: "Text Amount or Address were not provided"
+    403: "Text Amount or Address were not provided",
+    /** Generic error. */
+    500: 'Something is amiss!'
 };
 
 /**
