@@ -12,7 +12,7 @@ Now supports most of v2 API.
 	var ChangeTip = require('changetip'),
     	change_tip = new ChangeTip({api_key:{YOUR_KEY_HERE});
     	
-    change_tip.send_tip(uniqueId, sender, receiver, channel, meta).then(function(result) {
+    change_tip.send_tip(uniqueId, contextUrl, sender, receiver, channel).then(function(result) {
     	//Results here from transaction
     });
 ````

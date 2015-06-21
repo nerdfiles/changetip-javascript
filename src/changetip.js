@@ -124,23 +124,23 @@ ChangeTip.prototype = {
      * @param {number|string} receiver username/identifier for the tip receiever
      * @param {string} channel Origin channel for this tip (twitter, github, slack, etc)
      * @param {string} message Tip message. Includes amount or moniker.
-     * @param [meta] {Object} optional object to be sent back in result set
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
-    send_tip: function (context_uid, sender, receiver, channel, message, meta) {
+    send_tip: function (context_uid, context_url, sender, receiver, channel, message) {
         if (!this.api_key_or_access_token) throw new ChangeTipException(300);
         if (!channel) throw new ChangeTipException(301);
+        if (!receiver or !context_uid or !context_url or !message) throw new ChangeTipException(500);
 
         var deferred = Q.defer(),
             data;
 
         data = {
-            context_uid : context_uid,
-            sender      : sender,
-            receiver    : receiver,
-            channel     : channel,
             message     : message,
-            meta        : meta
+            receiver    : receiver,
+            context_uid : context_uid,
+            context_url : context_url,
+            sender      : sender,
+            channel     : channel
         };
 
         this._send_request(data, 'tips', null, Methods.POST, deferred);
@@ -405,6 +405,7 @@ ChangeTip.prototype = {
             headers : {
                 'Content-Type'   : 'application/json',
                 'Content-Length' : dataString.length
+                //'Bearer'         : this.api_key_or_access_token
             }
         };
 
