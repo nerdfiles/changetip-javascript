@@ -5,6 +5,7 @@ try {
 } catch (e) {
     var Q = require('Q');
 }
+var request = require('request');
 
 var https = require('https'),
     querystring = require('querystring'),
@@ -101,7 +102,6 @@ ChangeTip.prototype = {
         return this._dev_mode || false
     },
 
-
     /**
      * Initializes the class for remote API Calls
      * @param {ChangeTipConfig} config
@@ -144,7 +144,7 @@ ChangeTip.prototype = {
             channel     : channel
         };
 
-        this._send_request(data, 'tips', null, Methods.POST, deferred);
+        this._send_request(data, 'tip', null, Methods.POST, deferred);
         return deferred.promise;
     },
 
@@ -263,9 +263,10 @@ ChangeTip.prototype = {
      * @param {string} message
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
-    tip_url: function (text_amount, moniker, message) {
+    tip_url: function (amount, moniker, message) {
         if (!this.api_key_or_access_token) throw new ChangeTipException(300);
-        if (!text_amount) throw new ChangeTipException(402);
+        if (!amount) throw new ChangeTipException(402);
+        if (!moniker) throw new ChangeTipException(404);
         if (!message) throw new ChangeTipException(402);
         if (this.api_version === CHANGETIP_DEFAULT_VERSION) throw new ChangeTipException(400);
 
@@ -273,9 +274,10 @@ ChangeTip.prototype = {
             data;
 
         data = {
-            text_amount : text_amount,
-            message     : message
+            amount  : amount + ' ' + moniker,
+            message : message
         };
+        console.dir(data);
 
         this._send_request(data, 'tip-url', null, Methods.POST, deferred);
         return deferred.promise;
@@ -365,7 +367,7 @@ ChangeTip.prototype = {
      * @returns {promise.promise|jQuery.promise|promise|Q.promise|jQuery.ready.promise|l.promise}
      */
     get_tip: function (tips, channel) {
-        if (!this.api_key_or_access_token) throw new ChangeTipException(300);
+        if (!this.api_key) throw new ChangeTipException(300);
 
         var deferred = Q.defer(),
             params;
@@ -393,50 +395,77 @@ ChangeTip.prototype = {
      * @private
      */
     _send_request: function (data, path, params, method, deferred) {
-        var options, query_params, req,
+
+        var options, query_params, req, authorizedUrl
             dataString = JSON.stringify(data);
 
-        query_params = querystring.stringify(params);
+        querifiedPath = '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token + (query_params ? ('&' + query_params) : '')
 
         options = {
             host    : this.host,
             port    : 443,
-            path    : '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token + (query_params ? ('&' + query_params) : ''),
+            body    : data,
+            path    : querifiedPath,
             method  : method,
             headers : {
-                'Content-Type'   : 'application/json',
+                'Content-Type'   : 'multipart/form-data',
                 'Content-Length' : dataString.length
-                //'Bearer'         : this.api_key_or_access_token
             }
         };
 
         if (!this.dev_mode) {
-            req = https.request(options, function (res) {
-                res.setEncoding('utf-8');
 
-                var response = '', result;
+            authorizedUrl = 'https://' + this.host + '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token
 
-                res.on('data', function (response_data) {
-                    response += response_data;
+            if (method === 'POST')
+
+                request.post({
+                    url              : authorizedUrl,
+                    formData         : data,
+                    'Content-Length' : dataString.length
+                }, function optionalCallback(err, httpResponse, body) {
+
+                    if (err) {
+                        deferred.resolve(err);
+                        return
+                    }
+
+                    deferred.resolve(body);
+
                 });
 
-                res.on('end', function () {
-                    result = JSON.parse(response);
-                    deferred.resolve(result);
-                });
-            });
+            } else {
 
-            req.write(dataString);
-            req.end();
+                request.get({
+                  url : authorizedUrl,
+                  qs  : params
+                }, function optionalCallback(err, httpResponse, body) {
+
+                    if (err) {
+                        deferred.resolve( err );
+                        return
+                    }
+
+                    deferred.resolve(body);
+
+                });
+
+            }
+
         } else {
+
             deferred.resolve({
                 status : "dev_mode",
                 data   : data,
                 params : params,
                 path   : options.path
             });
+
         }
+
+        return
     }
+
 };
 
 /**
