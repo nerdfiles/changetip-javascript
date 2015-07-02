@@ -417,7 +417,7 @@ ChangeTip.prototype = {
 
             authorizedUrl = 'https://' + this.host + '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token
 
-            if (method === 'POST')
+            if (method === 'POST') {
 
                 request.post({
                     url              : authorizedUrl,
