@@ -25,6 +25,7 @@
   "main": "src/changetip.js",
   "dependencies": {
     "moment": "^2.9.0",
+    "oauth20-provider": "^0.6.0",
     "q": "^1.1.2"
   },
   "devDependencies": {

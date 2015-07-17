@@ -6,6 +6,12 @@ try {
     var Q = require('Q');
 }
 var request = require('request');
+var oauth2lib = require('oauth20-provider');
+var oauth2 = new oauth2lib({
+  log: {
+    level: 2
+  }
+});
 
 var https = require('https'),
     querystring = require('querystring'),
@@ -16,6 +22,7 @@ var https = require('https'),
     ChangeTipException                    = require('./changetip-exception'),
     CHANGETIP_DEFAULT_VERSION             = "2",
     CHANGETIP_DEFAULT_HOST                = "api.changetip.com",
+    CHANGETIP_DEFAULT_AUTH_HOST           = "https://www.changetip.com/o",
     CHANGETIP_DEFAULT_AUTHENTICATION_TYPE = "access_token",
     instance;
 
@@ -115,6 +122,50 @@ ChangeTip.prototype = {
         this.api_version         = config.api_version || undefined;
         this.dev_mode            = config.dev_mode || false;
         return this;
+    },
+
+
+    /**
+     * Authorization Check
+     * @param {object} req Request object.
+     * @param {object} res Response object.
+     * @param {function} next Next URL pass-through.
+     */
+    isAuthorized: function (req, res, next) {
+        if (req.session.authorized) next();
+        else {
+            var params = req.query;
+            params.backUrl = req.path;
+            res.redirect('/login?' + query.stringify(params));
+        }
+    },
+
+
+    /**
+     * Render our decision page
+     * @see Look into ./test/server for further information
+     * @usage server.post('/authorization', isAuthorized, oauth2.controller.authorization, callback);
+     * @param {object} server
+     * @param {function} callback
+     */
+    authorization: function (server, callback) {
+      var authorizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/authorization';
+      server.get(authorizationUrl, isAuthorized, oauth2.controller.authorization, function(req, res) {
+          res.render('authorization', {
+            layout: false
+          });
+      });
+    },
+
+
+    /**
+     * Tokenization URL
+     * @param {object} server
+     * @param {function} callback
+     */
+    tokenize: function (server, callback) {
+      var tokenizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/token';
+      server.post(tokenizationUrl, oauth2.controller.token);
     },
 
 
@@ -396,7 +447,7 @@ ChangeTip.prototype = {
      */
     _send_request: function (data, path, params, method, deferred) {
 
-        var options, query_params, req, authorizedUrl
+        var options, query_params, req, authorizedUrl, querifiedPath,
             dataString = JSON.stringify(data);
 
         querifiedPath = '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token + (query_params ? ('&' + query_params) : '')
@@ -426,7 +477,8 @@ ChangeTip.prototype = {
                 }, function optionalCallback(err, httpResponse, body) {
 
                     if (err) {
-                        deferred.resolve(err);
+                        //deferred.resolve(err);
+                        deferred.reject(err);
                         return
                     }
 
@@ -442,7 +494,8 @@ ChangeTip.prototype = {
                 }, function optionalCallback(err, httpResponse, body) {
 
                     if (err) {
-                        deferred.resolve( err );
+                        //deferred.resolve( err );
+                        deferred.reject( err );
                         return
                     }
 
