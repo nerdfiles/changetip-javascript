@@ -131,7 +131,7 @@ ChangeTip.prototype = {
      * @param {object} res Response object.
      * @param {function} next Next URL pass-through.
      */
-    isAuthorized: function (req, res, next) {
+    is_authorized: function (req, res, next) {
         if (req.session.authorized) next();
         else {
             var params = req.query;
@@ -142,19 +142,47 @@ ChangeTip.prototype = {
 
 
     /**
+     * Authentication Inject
+     * @param {object} server Express Server object.
+     */
+    inject_authentication: function (server) {
+        server.use(oauth2.inject());
+    },
+
+
+    /**
+     * Configure OAuth Controller
+     * @param {object} options
+     */
+    configure_controller: function (options) {
+    },
+
+
+    /**
      * Render our decision page
      * @see Look into ./test/server for further information
-     * @usage server.post('/authorization', isAuthorized, oauth2.controller.authorization, callback);
      * @param {object} server
      * @param {function} callback
+     * @return {undefined}
+     *
+     * @usage server.post('/authorization', isAuthorized, oauth2.controller.authorization, callback);
      */
     authorization: function (server, callback) {
-      var authorizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/authorization';
-      server.get(authorizationUrl, isAuthorized, oauth2.controller.authorization, function(req, res) {
-          res.render('authorization', {
-            layout: false
-          });
-      });
+        if (!server)  throw new ChangeTipException(500);
+        if (!callback)  console.log('No callback provided for authorization: Are you sure about that?');
+
+        var authorizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/authorization';
+        var _this = this;
+        server.get(authorizationUrl, _this.is_authorized, oauth2.controller.authorization, function(request, response) {
+
+            response.render('authorization', {
+                layout: false
+            });
+
+            _this.api_key_or_access_token = response;
+        });
+
+        return;
     },
 
 
@@ -162,10 +190,19 @@ ChangeTip.prototype = {
      * Tokenization URL
      * @param {object} server
      * @param {function} callback
+     * @return {undefined}
      */
     tokenize: function (server, callback) {
-      var tokenizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/token';
-      server.post(tokenizationUrl, oauth2.controller.token);
+        if (!server)  throw new ChangeTipException(500);
+        if (!callback)  console.log('No callback provided for tokenize: Are you sure about that?');
+
+        var tokenizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/token';
+        var _this = this;
+        server.post(tokenizationUrl, oauth2.controller.token).success(function (loaded_token) {
+            _this.api_key_or_access_token = loaded_token;
+        });
+
+        return;
     },
 
 
