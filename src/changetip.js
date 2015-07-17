@@ -6,6 +6,12 @@ try {
     var Q = require('Q');
 }
 var request = require('request');
+var oauth2lib = require('oauth20-provider');
+var oauth2 = new oauth2lib({
+  log: {
+    level: 2
+  }
+});
 
 var https = require('https'),
     querystring = require('querystring'),
@@ -16,6 +22,7 @@ var https = require('https'),
     ChangeTipException                    = require('./changetip-exception'),
     CHANGETIP_DEFAULT_VERSION             = "2",
     CHANGETIP_DEFAULT_HOST                = "api.changetip.com",
+    CHANGETIP_DEFAULT_AUTH_HOST           = "https://www.changetip.com/o",
     CHANGETIP_DEFAULT_AUTHENTICATION_TYPE = "access_token",
     instance;
 
@@ -115,6 +122,87 @@ ChangeTip.prototype = {
         this.api_version         = config.api_version || undefined;
         this.dev_mode            = config.dev_mode || false;
         return this;
+    },
+
+
+    /**
+     * Authorization Check
+     * @param {object} req Request object.
+     * @param {object} res Response object.
+     * @param {function} next Next URL pass-through.
+     */
+    is_authorized: function (req, res, next) {
+        if (req.session.authorized) next();
+        else {
+            var params = req.query;
+            params.backUrl = req.path;
+            res.redirect('/login?' + query.stringify(params));
+        }
+    },
+
+
+    /**
+     * Authentication Inject
+     * @param {object} server Express Server object.
+     */
+    inject_authentication: function (server) {
+        server.use(oauth2.inject());
+    },
+
+
+    /**
+     * Configure OAuth Controller
+     * @param {object} options
+     */
+    configure_controller: function (options) {
+    },
+
+
+    /**
+     * Render our decision page
+     * @see Look into ./test/server for further information
+     * @param {object} server
+     * @param {function} callback
+     * @return {undefined}
+     *
+     * @usage server.post('/authorization', isAuthorized, oauth2.controller.authorization, callback);
+     */
+    authorization: function (server, callback) {
+        if (!server)  throw new ChangeTipException(500);
+        if (!callback)  console.log('No callback provided for authorization: Are you sure about that?');
+
+        var authorizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/authorization';
+        var _this = this;
+        server.get(authorizationUrl, _this.is_authorized, oauth2.controller.authorization, function(request, response) {
+
+            response.render('authorization', {
+                layout: false
+            });
+
+            _this.api_key_or_access_token = response;
+        });
+
+        return;
+    },
+
+
+    /**
+     * Tokenization URL
+     * @param {object} server
+     * @param {function} callback
+     * @return {undefined}
+     */
+    tokenize: function (server, callback) {
+        if (!server)  throw new ChangeTipException(500);
+        if (!callback)  console.log('No callback provided for tokenize: Are you sure about that?');
+
+        var tokenizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/token';
+        var _this = this;
+        server.post(tokenizationUrl, oauth2.controller.token).success(function (loaded_token) {
+            _this.api_key_or_access_token = loaded_token;
+        });
+
+        return;
     },
 
 
@@ -396,7 +484,7 @@ ChangeTip.prototype = {
      */
     _send_request: function (data, path, params, method, deferred) {
 
-        var options, query_params, req, authorizedUrl
+        var options, query_params, req, authorizedUrl, querifiedPath,
             dataString = JSON.stringify(data);
 
         querifiedPath = '/v' + this.api_version + '/' + path + '/?' + this.authentication_type + '=' + this.api_key_or_access_token + (query_params ? ('&' + query_params) : '')
@@ -426,7 +514,8 @@ ChangeTip.prototype = {
                 }, function optionalCallback(err, httpResponse, body) {
 
                     if (err) {
-                        deferred.resolve(err);
+                        //deferred.resolve(err);
+                        deferred.reject(err);
                         return
                     }
 
@@ -442,7 +531,8 @@ ChangeTip.prototype = {
                 }, function optionalCallback(err, httpResponse, body) {
 
                     if (err) {
-                        deferred.resolve( err );
+                        //deferred.resolve( err );
+                        deferred.reject( err );
                         return
                     }
 
