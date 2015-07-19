@@ -6,12 +6,6 @@ try {
     var Q = require('Q');
 }
 var request = require('request');
-var oauth2lib = require('oauth20-provider');
-var oauth2 = new oauth2lib({
-  log: {
-    level: 2
-  }
-});
 
 var https = require('https'),
     querystring = require('querystring'),
@@ -22,9 +16,21 @@ var https = require('https'),
     ChangeTipException                    = require('./changetip-exception'),
     CHANGETIP_DEFAULT_VERSION             = "2",
     CHANGETIP_DEFAULT_HOST                = "api.changetip.com",
-    CHANGETIP_DEFAULT_AUTH_HOST           = "https://www.changetip.com/o",
+    CHANGETIP_DEFAULT_AUTH_HOST           = "www.changetip.com",
+    CHANGETIP_DEFAULT_AUTH_HOST_BASE      = '/o'
+    CHANGETIP_DEFAULT_AUTH_HOST_AUTHORIZE = '/authorize'
+    CHANGETIP_DEFAULT_AUTH_HOST_TOKEN     = '/token'
     CHANGETIP_DEFAULT_AUTHENTICATION_TYPE = "access_token",
+    CHANGETIP_LOG_LEVEL                   = 2,
     instance;
+
+var oauth2lib = require('oauth20-provider');
+var oauth2 = new oauth2lib({
+    log: {
+        level: CHANGETIP_LOG_LEVEL
+    }
+});
+
 
 /**
  * @typedef ChangeTipConfig
@@ -34,6 +40,7 @@ var https = require('https'),
  * @property {number} api_version Base URL for all remote API requests (defaults to CHANGETIP_DEFAULT_VERSION)
  * @property {string} authentication_type Choose to pass either an API Key or an Access Token (defaults to CHANGETIP_DEFAULT_AUTHENTICATION_TYPE)
  */
+
 
 /**
  * ChangeTip API
@@ -48,6 +55,7 @@ var ChangeTip = function (config) {
 };
 
 ChangeTip.prototype = {
+
     /**
      * API Key from ChangeTip. Request one from the {@link htps://www.changetip.com/api|ChangeTip API} website.'
      * @public
@@ -101,6 +109,9 @@ ChangeTip.prototype = {
         return this._api_version || CHANGETIP_DEFAULT_VERSION;
     },
 
+    /**
+     * Development Mode configuration.
+     */
     set dev_mode(value) {
         this._dev_mode = !!value;
     },
@@ -115,6 +126,7 @@ ChangeTip.prototype = {
      * @returns {ChangeTip}
      */
     init: function (config) {
+
         config                   = config || {};
         this.api_key_or_access_token    = config.api_key_or_access_token || undefined;
         this.authentication_type = config.authentication_type || undefined;
@@ -126,83 +138,70 @@ ChangeTip.prototype = {
 
 
     /**
-     * Authorization Check
-     * @param {object} req Request object.
-     * @param {object} res Response object.
-     * @param {function} next Next URL pass-through.
-     */
-    is_authorized: function (req, res, next) {
-        if (req.session.authorized) next();
-        else {
-            var params = req.query;
-            params.backUrl = req.path;
-            res.redirect('/login?' + query.stringify(params));
-        }
-    },
+      * Get Token
+      *
+      * @param {object} credentials
+      * @param {object} request
+      * @param {function} success Success condition callback.
+      * @param {function} fail Error condition callback.
+      * @return {undefined}
+      */
+    get_token = function(credentials, req, success, fail){
+      if (!req)  console.log('No authorization request object provided: Are you sure about that?')
+      if (!success)  console.log('No callback provided for authorization success: Are you sure about that?')
+      if (!fail)  console.log('No callback provided for authorization failure: Are you sure about that?')
+      if (!credentials)  throw new ChangeTipException(500);
 
+      var urlSep = '';
 
-    /**
-     * Authentication Inject
-     * @param {object} server Express Server object.
-     */
-    inject_authentication: function (server) {
-        server.use(oauth2.inject());
-    },
+      var authorizationUrl = [
+        CHANGETIP_DEFAULT_AUTH_HOST
+        CHANGETIP_DEFAULT_AUTH_HOST_BASE
+        CHANGETIP_DEFAULT_AUTH_HOST_AUTHORIZE
+      ].join urlSep
 
+      var token;
+      var credentials = credentials.changeTip.oauth2;
+      //var other_credentials=credentials.fetch('other');
 
-    /**
-     * Configure OAuth Controller
-     * @param {object} options
-     */
-    configure_controller: function (options) {
-    },
+      var token_request='code='+req['query']['code'] +
+          '&client_id='+google_credentials['client_id'] +
+          '&client_secret='+google_credentials['client_secret'] +
+          '&redirect_uri=http%3A%2F%2Fmyurl.com:3000%2Fauth' +
+          '&grant_type=authorization_code';
 
+      var request_length = token_request.length;
 
-    /**
-     * Render our decision page
-     * @see Look into ./test/server for further information
-     * @param {object} server
-     * @param {function} callback
-     * @return {undefined}
-     *
-     * @usage server.post('/authorization', isAuthorized, oauth2.controller.authorization, callback);
-     */
-    authorization: function (server, callback) {
-        if (!server)  throw new ChangeTipException(500);
-        if (!callback)  console.log('No callback provided for authorization: Are you sure about that?');
+      console.log("requesting: " + token_request);
 
-        var authorizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/authorization';
-        var _this = this;
-        server.get(authorizationUrl, _this.is_authorized, oauth2.controller.authorization, function(request, response) {
-
-            response.render('authorization', {
-                layout: false
-            });
-
-            _this.api_key_or_access_token = response;
-        });
-
-        return;
-    },
-
-
-    /**
-     * Tokenization URL
-     * @param {object} server
-     * @param {function} callback
-     * @return {undefined}
-     */
-    tokenize: function (server, callback) {
-        if (!server)  throw new ChangeTipException(500);
-        if (!callback)  console.log('No callback provided for tokenize: Are you sure about that?');
-
-        var tokenizationUrl = CHANGETIP_DEFAULT_AUTH_HOST + '/token';
-        var _this = this;
-        server.post(tokenizationUrl, oauth2.controller.token).success(function (loaded_token) {
-            _this.api_key_or_access_token = loaded_token;
-        });
-
-        return;
+      request(
+          {
+            method  : 'POST',
+            uri     : 'https://accounts.google.com/o/oauth2/token',
+            body    : token_request,
+            headers : {
+              'Content-length' : request_length,
+              'Content-type'   : 'application/x-www-form-urlencoded'
+            }
+          },
+          function (error, response, body) {
+              if(response.statusCode == 200){
+                  console.log('document fetched');
+                  token=body['access_token'];
+                  store_token(body);
+                  if(success){
+                      success(token);
+                  }
+              }
+              else {
+                  console.log('error: '+ response.statusCode);
+                  console.log(body)
+                  if(fail){
+                      fail();
+                  }
+              }
+          }
+      );
     },
 
 
