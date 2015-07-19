@@ -15,21 +15,15 @@ var https = require('https'),
     },
     ChangeTipException                    = require('./changetip-exception'),
     CHANGETIP_DEFAULT_VERSION             = "2",
+    CHANGETIP_DEFAULT_PROTOCOL            = "http://",
     CHANGETIP_DEFAULT_HOST                = "api.changetip.com",
     CHANGETIP_DEFAULT_AUTH_HOST           = "www.changetip.com",
-    CHANGETIP_DEFAULT_AUTH_HOST_BASE      = '/o'
-    CHANGETIP_DEFAULT_AUTH_HOST_AUTHORIZE = '/authorize'
-    CHANGETIP_DEFAULT_AUTH_HOST_TOKEN     = '/token'
+    CHANGETIP_DEFAULT_AUTH_HOST_BASE      = '/o',
+    CHANGETIP_DEFAULT_AUTH_HOST_AUTHORIZE = '/authorize',
+    CHANGETIP_DEFAULT_AUTH_HOST_TOKEN     = '/token',
     CHANGETIP_DEFAULT_AUTHENTICATION_TYPE = "access_token",
     CHANGETIP_LOG_LEVEL                   = 2,
     instance;
-
-var oauth2lib = require('oauth20-provider');
-var oauth2 = new oauth2lib({
-    log: {
-        level: CHANGETIP_LOG_LEVEL
-    }
-});
 
 
 /**
@@ -84,11 +78,24 @@ ChangeTip.prototype = {
     },
 
     /**
+     * Auth Host used for all ChangeTip authentication requests (www.changetip.com)
+     * @public
+     * @property {string} auth_host
+     */
+    set auth_host (value) {
+        this._auth_host = value;
+    },
+
+    get auth_host() {
+        return this._auth_host || CHANGETIP_DEFAULT_AUTH_HOST;
+    },
+
+    /**
      * Host used for all ChangeTip remote requests (api.changetip.com)
      * @public
      * @property {string} host
      */
-    set host(value) {
+    set host (value) {
         this._host = value;
     },
 
@@ -101,22 +108,22 @@ ChangeTip.prototype = {
      * @public
      * @property {number} api_version
      */
-    set api_version(value) {
+    set api_version (value) {
         this._api_version = value;
     },
 
-    get api_version() {
+    get api_version () {
         return this._api_version || CHANGETIP_DEFAULT_VERSION;
     },
 
     /**
      * Development Mode configuration.
      */
-    set dev_mode(value) {
+    set dev_mode (value) {
         this._dev_mode = !!value;
     },
 
-    get dev_mode() {
+    get dev_mode () {
         return this._dev_mode || false
     },
 
@@ -127,13 +134,41 @@ ChangeTip.prototype = {
      */
     init: function (config) {
 
-        config                   = config || {};
-        this.api_key_or_access_token    = config.api_key_or_access_token || undefined;
-        this.authentication_type = config.authentication_type || undefined;
-        this.host                = config.host || undefined;
-        this.api_version         = config.api_version || undefined;
-        this.dev_mode            = config.dev_mode || false;
+        config                       = config || {};
+        this.api_key_or_access_token = config.api_key_or_access_token || undefined;
+        this.authentication_type     = config.authentication_type || undefined;
+        this.auth_host               = config.auth_host || undefined;
+        this.host                    = config.host || undefined;
+        this.api_version             = config.api_version || undefined;
+        this.dev_mode                = config.dev_mode || false;
         return this;
+    },
+
+
+    /**
+      * Authorize
+      *
+      * @param {object} credentials
+      * @return {object:Promise}
+      */
+    authorize: function (_credentials) {
+      if (!_credentials)  throw new ChangeTipException(500);
+
+      var credentials = _credentials.changeTip.oauth2;
+
+      var deferred = Q.defer(),
+          data;
+
+      data = {
+        client_id     : credentials['client_id'],
+        client_secret : credentials['client_secret'],
+        grant_type    : credentials['authorization_code']
+      };
+
+      this._get_token(data, 'o/authorize', null, Methods.GET, deferred);
+
+      return deferred.promise;
+
     },
 
 
@@ -141,67 +176,52 @@ ChangeTip.prototype = {
       * Get Token
       *
       * @param {object} credentials
-      * @param {object} request
-      * @param {function} success Success condition callback.
-      * @param {function} fail Error condition callback.
-      * @return {undefined}
+      * @return {object:Promise}
       */
-    get_token = function(credentials, req, success, fail){
-      if (!req)  console.log('No authorization request object provided: Are you sure about that?')
-      if (!success)  console.log('No callback provided for authorization success: Are you sure about that?')
-      if (!fail)  console.log('No callback provided for authorization failure: Are you sure about that?')
-      if (!credentials)  throw new ChangeTipException(500);
+    tokenize: function (_credentials) {
+      if (!_credentials)  throw new ChangeTipException(500);
 
-      var urlSep = '';
 
-      var authorizationUrl = [
-        CHANGETIP_DEFAULT_AUTH_HOST
-        CHANGETIP_DEFAULT_AUTH_HOST_BASE
-        CHANGETIP_DEFAULT_AUTH_HOST_AUTHORIZE
-      ].join urlSep
+      var credentials = _credentials.changeTip.oauth2;
 
-      var token;
-      var credentials = credentials.changeTip.oauth2;
       //var other_credentials=credentials.fetch('other');
 
-      var token_request='code='+req['query']['code'] +
-          '&client_id='+google_credentials['client_id'] +
-          '&client_secret='+google_credentials['client_secret'] +
-          '&redirect_uri=http%3A%2F%2Fmyurl.com:3000%2Fauth' +
-          '&grant_type=authorization_code';
+      // curl -X POST -d "grant_type=refresh_token&
+      //                  client_id=<your_client_id>&
+      //                  client_secret=<your_client_secret>&
+      //                  refresh_token=<your_refresh_token>" https://www.changetip.com/o/token/
 
-      var request_length = token_request.length;
+      /*
+       *var token_request='refresh_token=' + credentials['access_token'] +
+       *    '&client_id=' + credentials['client_id'] +
+       *    '&client_secret=' + credentials['client_secret'] +
+       *    '&grant_type=' + credentials['grant_type'];
+       */
 
-      console.log("requesting: " + token_request);
+      /*
+       *var token_request='code=' + req['query']['code'] +
+       *    '&client_id=' + credentials['client_id'] +
+       *    '&client_secret=' + credentials['client_secret'] +
+       *    '&redirect_uri=' credentials['redirect_uri'] +
+       *    '&grant_type=authorization_code';
+       */
 
-      request(
-          {
-            method  : 'POST',
-            uri     : 'https://accounts.google.com/o/oauth2/token',
-            body    : token_request,
-            headers : {
-              'Content-length' : request_length,
-              'Content-type'   : 'application/x-www-form-urlencoded'
-            }
-          },
-          function (error, response, body) {
-              if(response.statusCode == 200){
-                  console.log('document fetched');
-                  token=body['access_token'];
-                  store_token(body);
-                  if(success){
-                      success(token);
-                  }
-              }
-              else {
-                  console.log('error: '+ response.statusCode);
-                  console.log(body)
-                  if(fail){
-                      fail();
-                  }
-              }
-          }
-      );
+      var deferred = Q.defer(),
+          data;
+
+      data = {
+        access_token  : credentials['access_token'],
+        client_id     : credentials['client_id'],
+        client_secret : credentials['client_secret'],
+        grant_type    : credentials['grant_type']
+      };
+
+      //console.log("requesting: " + token_request);
+
+      this._get_token(data, 'o/token', null, Methods.POST, deferred);
+
+      return deferred.promise;
+
     },
 
 
@@ -470,6 +490,142 @@ ChangeTip.prototype = {
 
 
     /**
+     * Get Authorization Code
+     * @param {object} data
+     * @param {string} path
+     * @param {object} params
+     * @param {string} method
+     * @param {object:Promise} deferred
+     */
+    _get_authorization_code: function (data, path, params, method, deferred) {
+
+        var options,
+            urlSep = '',
+            dataString = JSON.stringify(data),
+            credentials = data;
+
+        var authorization_request = '';
+
+        var request_length = authorization_request.length;
+
+        var authorization_url = [
+            CHANGETIP_DEFAULT_PROTOCOL,
+            CHANGETIP_DEFAULT_AUTH_HOST,
+            CHANGETIP_DEFAULT_AUTH_HOST_BASE,
+            CHANGETIP_DEFAULT_AUTH_HOST_AUTHORIZE
+        ].join(urlSep);
+
+        options = {
+            method: 'GET',
+            uri    : authorization_url,
+            body   : authorization_request,
+            headers : {
+                'Content-length' : request_length,
+                'Content-type'   : 'application/x-www-form-urlencoded'
+            }
+        };
+
+        console.log(JSON.stringify(options));
+
+        request(
+            options,
+            function (error, response, body) {
+
+                if (response.statusCode === 200) {
+
+                    console.log('success: ' + response.statusCode);
+
+                    this.authorization_code = code = body['authorization_code'];
+
+                    deferred.resolve(token);
+
+                } else {
+
+                    console.log('error:response: ' + JSON.stringify(response));
+                    console.log('error: ' + response.statusCode);
+
+                    deferred.reject(body);
+
+                }
+            }
+        );
+
+        return;
+
+    },
+
+
+    /**
+     * Get Refresh Token
+     * @param {object} data
+     * @param {string} path
+     * @param {object} params
+     * @param {string} method
+     * @param {object:Promise} deferred
+     */
+    _get_token: function (data, path, params, method, deferred) {
+
+        var options,
+            urlSep = '',
+            token,
+            dataString = JSON.stringify(data),
+            credentials = data;
+
+        var token_request = 'refresh_token=' + credentials['refresh_token'] +
+            '&client_id=' + credentials['client_id'] +
+            '&client_secret=' + credentials['client_secret'] +
+            '&grant_type=' + credentials['grant_type'];
+
+        var request_length = token_request.length;
+
+        var token_url = [
+            CHANGETIP_DEFAULT_PROTOCOL,
+            CHANGETIP_DEFAULT_AUTH_HOST,
+            CHANGETIP_DEFAULT_AUTH_HOST_BASE,
+            CHANGETIP_DEFAULT_AUTH_HOST_TOKEN
+        ].join(urlSep);
+
+        options = {
+            method  : 'POST',
+            uri     : token_url,
+            body    : token_request,
+            headers : {
+                'Content-length' : request_length,
+                'Content-type'   : 'application/x-www-form-urlencoded'
+            }
+        };
+
+        console.log(JSON.stringify(options));
+
+        request(
+            options,
+            function (error, response, body) {
+
+                if (response.statusCode === 200) {
+
+                    console.log('success: ' + response.statusCode);
+
+                    this.api_key_or_access_token = token = body['access_token'];
+
+                    deferred.resolve(token);
+
+                } else {
+
+                    console.log('error:response: ' + JSON.stringify(response));
+                    console.log('error: ' + response.statusCode);
+
+                    deferred.reject(body);
+
+                }
+            }
+        );
+
+        return;
+
+    },
+
+
+    /**
      * Sends a request
      * @param {Object} data JSON Object with data payload
      * @param {String} path API Path
@@ -552,7 +708,7 @@ ChangeTip.prototype = {
 
         }
 
-        return
+        return;
     }
 
 };
